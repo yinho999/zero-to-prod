@@ -10,14 +10,25 @@ path = "src/lib.rs"
 
 [[bin]]
 path = "src/main.rs"
-name="zero2prod"
+name = "zero2prod"
 
 [dependencies]
 actix = "0.13.0"
 actix-web = "4.3.1"
+config = "0.13.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
+[dependencies.sqlx]
+version = "0.6.2"
+features = [
+    "runtime-actix-native-tls",
+    "macros",
+    "postgres",
+    "uuid",
+    "chrono",
+    "migrate"
+]
 
 # Dev dependencies are used exclusively when running tests or examples
 # They do not get included in the final application binary!

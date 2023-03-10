@@ -1,6 +1,8 @@
 use std::net::TcpListener;
 
-use zero2prod::run;
+use sqlx::{Connection, PgConnection};
+use zero2prod::{configuration::get_configuration, startup::run};
+
 fn spawn_app() -> String {
     let listener = TcpListener::bind("127.0.0.1:0").expect("Unable to bind random port");
     // Get the port from the listener
@@ -40,6 +42,14 @@ async fn health_check_works() {
 async fn subscribe_returns_a_200_for_valid_form_data() {
     // Arrange server
     let app_address = spawn_app();
+
+    // Get config
+    let config = get_configuration().expect("Failed to read configuration");
+    let connection_string = config.database.connection_string();
+    let mut database_connection = PgConnection::connect(&connection_string)
+        .await
+        .expect("Failed to connect to Postgres database");
+
     // Spawn client
     let client = reqwest::Client::new();
 
@@ -52,7 +62,15 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
         .send()
         .await
         .expect("Failed to send the request");
+    // Compare Expected Response and Actual Response
     assert_eq!(200, response.status().as_u16());
+    // Get saved query
+    let saved = sqlx::query!("SELECT email, name FROM subscriptions")
+        .fetch_one(&mut database_connection)
+        .await
+        .expect("Failed to fetch saved subscription");
+    assert_eq!(saved.email, "ursula_le_guin@gmail.com");
+    assert_eq!(saved.name, "le guin");
 }
 #[actix_web::test]
 async fn subscribe_return_a_400_when_data_is_missing() {
